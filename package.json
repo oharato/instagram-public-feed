@@ -5,18 +5,30 @@
   "type": "module",
   "scripts": {
     "start": "node src/cli.ts",
+    "urls": "node src/cli.ts urls",
+    "posts": "node src/cli.ts posts",
+    "html": "node src/view.ts html",
+    "preview": "node src/view.ts preview",
+    "fmt": "oxfmt .",
+    "fmt:check": "oxfmt --check .",
+    "lint": "oxlint --deny-warnings src test",
+    "lint:fix": "oxlint --fix src test",
     "test": "node --test --test-isolation=none test/*.test.ts",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "check": "pnpm fmt:check && pnpm lint && pnpm typecheck && pnpm test"
   },
   "dependencies": {
     "parse5": "8.0.1",
     "playwright-core": "1.62.1"
   },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0",
+    "typescript": "7.0.2"
+  },
   "engines": {
     "node": ">=24"
   },
-  "devDependencies": {
-    "@types/node": "26.6.5",
-    "typescript": "7.0.2"
-  }
+  "packageManager": "pnpm@12.3.4"
 }

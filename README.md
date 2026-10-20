@@ -1,89 +1,182 @@
 # instagram-public-feed
 
-公開 Instagram 投稿の URL・本文・画像をローカル保存する、小さな TypeScript CLI です。Node.js 24 以上。非公式であり、継続動作を保証しません。デフォルトはブラウザを起動しない HTTP モードです。ログイン、Cookie 注入、既存ブラウザプロファイル、非公開 API、ステルス、プロキシ回転は使いません。
+公開 Instagram 投稿の URL 一覧を取得し、その一覧から本文と画像をローカルに保存する CLI です。
 
-## サポート範囲
+## 最初の準備
 
-| モード | URL 発見 | 本文 | 画像 | 投稿日時 |
-| --- | --- | --- | --- | --- |
-| `http`（標準） | 既知の URL を指定。プロフィール HTML にリンクがなければ明確なエラー | 公開 Open Graph メタデータから分離。全文保証なし | 切り抜きプレビュー 1 枚のみ | `metadataDate` の日付のみ。`publishedAt: null` |
-| `browser`（明示指定） | 表示済み公開リンク全件の正式時刻を比較し最大 3 件。スクロールして全履歴を探さない | 特定できる投稿の `h1`、未対応 DOM では HTTP メタデータ | 通常 UI の次へボタンで進める範囲。DOM 未対応では HTTP プレビュー 1 枚にフォールバック | 対象パーマリンク内の `time[datetime]` |
-
-ブラウザ方式だけが可能という意味ではありません。既知 URL は HTTP で本文メタデータとプレビュー画像を取得できました。一方、ブラウザなしでアカウント配列から新着 URL を自動発見する機能は現状未達です。プロフィールの単純 GET は、実測では公開投稿リンクがありませんでした。
-
-ブラウザ経路は Instagram の DOM 変更に弱い実験的対応です。投稿の特定が曖昧なら停止し、DOM 未対応とアクセス拒否を分けて報告します。画像 alt の日付やコメントの時刻を正式な投稿時刻には使いません。動画本体の保存には対応しません。
-
-## 起動
+Node.js 24 以上、pnpm 12、Chromium または Google Chrome を使います。
 
 ```sh
-npm ci
+pnpm install
 cp config.example.json config.json
-npm start -- --config config.json --mode http --limit 3
 ```
 
-上のコマンドで URL 発見ができなければエラーになります。既知 URL 1 件なら、アカウントを一つ設定したうえで次のように実行できます。`Synthetic1` は合成例なので実在の shortcode に置き換えてください。
-
-```sh
-npm start -- --config config.json --url https://www.instagram.com/ningyocho.news/p/Synthetic1/
-```
-
-複数アカウントと既知 URL はローカルの `config.json` に設定します。以下の `Synthetic1` は合成例なので実在の URL に置き換えてください。
+`config.json` に取得対象を設定します。初期値は `ningyocho.news` です。
 
 ```json
 {
-  "accounts": ["ningyocho.news", "another.example"],
-  "postUrls": {
-    "ningyocho.news": ["https://www.instagram.com/ningyocho.news/p/Synthetic1/"],
-    "another.example": ["https://www.instagram.com/another.example/p/Synthetic2/"]
-  }
+  "accounts": ["ningyocho.news"]
 }
 ```
 
-`postUrls` は省略可能です。各アカウントの既知 URL は `--limit` 以下にしてください。既知 URL モードは指定分を処理するだけで、最新投稿の自動選定ではありません。
+通常の操作はこの設定を自動で読みます。`config.json` は Git の管理対象外です。
 
-ブラウザで表示投稿から選定したい場合は、別途利用可能な Chromium を指定します。HTTP モードにブラウザのインストールは不要です。
+複数アカウントは `accounts` に追加します。`pnpm urls` と `pnpm posts` の両方が、設定順に全アカウントを処理します。
 
-```sh
-npm start -- --config config.json --mode browser --browser /absolute/path/to/chromium --limit 3
-# または CHROMIUM_PATH を指定。表示環境があれば --headed も可
+```json
+{
+  "accounts": ["ningyocho.news", "another.account"]
+}
 ```
 
-OS のサンドボックスを有効にした一時ブラウザコンテキストを使います。OS のセキュリティ設定は変更しません。実行環境がブラウザ起動を制限する場合は、エラー原因を解消できる正規の環境で実行してください。任意の登録案内は、可視の「閉じる」ボタンのみで閉じます。ログイン要求や CAPTCHA を突破しません。
+## 使い方
 
-## 保存形式と再実行
+### 1. 投稿 URL の一覧を保存
+
+```sh
+pnpm urls
+```
+
+各プロフィールに表示された公開投稿リンクを `data/<account>/post-links.json` に保存します。ブラウザは画面を出さずに起動し、PATH にある Chromium / Chrome を自動で探します。`CHROMIUM_PATH` で実行ファイルを指定することもできます。
+
+標準では初期表示分だけを取得します。さらに通常のスクロールと「投稿をもっと見る」で追加読み込みを試す場合：
+
+```sh
+pnpm urls --scrolls 3
+```
+
+この例ではスクロール回数はアカウントごとに最大3回です（指定範囲は0〜50回）。リンクが増えない場合は早めに終了します。登録・ログイン案内が出た場合は、その前に確認できた URL を保存して停止し、後続アカウントも停止します。これは全履歴を保証する機能ではありません。保存順は発見順で、固定投稿などがあるため最新順とは限りません。実測では `ningyocho.news` で初期12件から24件に増やせました。
+
+### 2. 一覧から URL・本文・画像を保存
+
+```sh
+pnpm posts
+```
+
+`config.json` の各アカウントについて `data/<account>/post-links.json` を読み、その一覧の全件を順番に処理します。プロフィールの再取得や最新順への選び直しは行いません。本文・画像はアカウント別のディレクトリに保存し、全アカウントの投稿を `data/posts.json` に集約します。同じ shortcode があっても、アカウントごとに区別します。
+
+**標準ではブラウザの公開画面から本文と複数画像を取得します。** 通常の「次へ」操作で表示できる範囲が対象で、全文・全画像の取得を保証するものではありません。DOM 未対応の場合は HTTP プレビューにフォールバックし、未完了として終了コード1を返します。動画本体の保存には対応しません。
+
+ブラウザを使わず軽量に取得したい場合は `pnpm posts --mode http` を指定します。この場合の本文は公開メタデータの範囲、画像はプレビュー1枚で、`status: "preview_only"` と `imagesComplete: false` を記録します。
+
+取得済みの投稿は、保存ファイルの長さと SHA-256 を確認してスキップします。入力一覧は書き換えません。
+
+### 3. 投稿一覧を1枚の HTML にまとめる
+
+```sh
+pnpm html
+```
+
+`data/posts.json` と保存済み画像から `data/gallery.html` を生成します。アカウントをまたいで投稿日の新しい順に並べ、本文・投稿へのリンク・保存済み画像を表示します。正式な投稿日時がない場合はメタデータの日付を参考にし、日付も不明な投稿は最後に表示します。参考日付が同じ投稿同士の正確な順序は分かりません。画像は HTML 内に埋め込むため、このファイル1つでオフラインでも閲覧できます。複数画像は「前へ」「次へ」ボタンで切り替えられます。Instagram への追加取得は行いません。
+
+各投稿の画像が1枚だけの場合は、以前の HTTP プレビューだけを保存している可能性があります。複数画像を取得し直して HTML に反映するには：
+
+```sh
+pnpm posts
+pnpm html
+```
+
+ブラウザ方式は、対象投稿の本文と通常の「次へ」操作で取得できる画像を保存します。次の画像の先読みも考慮して送りを判定します。取得済みの完全な投稿はスキップし、HTTP プレビューは再取得します。動画や DOM 未対応では未完了になる場合があります。
+
+### 4. 同じ LAN の端末でプレビュー
+
+```sh
+pnpm preview
+```
+
+ポート3000で起動し、同じ LAN から接続できる URL を実行結果の `urls` に表示します。スマートフォンなどを同じ LAN に接続して、`http://192.168.x.x:3000/` などの表示された URL を開いてください。接続できない場合は、端末間通信やポート3000の通信が許可されているか確認してください。終了は `Ctrl+C` です。
+
+生成済み HTML だけを配信します。設定ファイルや `posts.json` などは配信しません。同じ LAN 上で閲覧できるプレビューで、認証はありません。`pnpm posts` の再実行後は `pnpm html` で再生成し、ブラウザを更新すると反映されます。
+
+```sh
+pnpm preview --port 8080       # ポートを変更
+pnpm preview --host 127.0.0.1  # このPCだけで閲覧
+```
+
+データ保存先を変更した場合は `pnpm html --out ./output`、`pnpm preview --out ./output` のように、取得時と同じ `--out` を指定します。`pnpm --silent html`、`pnpm --silent preview` なら pnpm のコマンド表示を消せます。生成結果とプレビュー起動情報は JSON で出力します。
+
+### 実行結果を JSON で受け取る
+
+実行結果は標準出力に JSON で出力します。pnpm が表示する `$ node ...` は標準エラー出力です。画面上でも pnpm のコマンド表示を消すには、`--silent` をスクリプト名の前に付けます。
+
+```sh
+pnpm --silent posts
+```
+
+実行結果をファイルへ保存する場合：
+
+```sh
+pnpm --silent posts > result.json
+```
+
+`result.json` は実行日時・成功／失敗・保存／スキップ情報などの実行レポートです。取得した投稿の URL・本文・画像情報は `data/posts.json` に保存されます。処理中のログやエラーは標準エラー出力に出るため、JSON を保存するときは `2>&1` で混ぜないでください。設定不備など、処理開始前のエラーでは JSON が出力されない場合があります。
+
+### 必要なときだけ付けるオプション
+
+| 操作                         | コマンド                                                 |
+| ---------------------------- | -------------------------------------------------------- |
+| 一覧の先頭2件だけ処理        | `pnpm posts --limit 2`                                   |
+| 設定中の1アカウントだけ処理  | `pnpm posts --account ningyocho.news`                    |
+| 1アカウントの一覧だけ更新    | `pnpm urls --account ningyocho.news`                     |
+| 別の一覧から取得             | `pnpm posts --from-list /path/to/post-links.json`        |
+| 保存先を変更                 | `pnpm urls --out ./output` → `pnpm posts --out ./output` |
+| プレビュー1枚だけ軽量に取得  | `pnpm posts --mode http --limit 2`                       |
+| ブラウザの場所を指定         | `pnpm urls --browser /snap/bin/chromium`                 |
+| デスクトップ環境で画面を表示 | `pnpm urls --headed`                                     |
+| 別の設定ファイルを使用       | `pnpm posts --config another.json`                       |
+
+`--limit` は**アカウントごと**に適用します。例えば2アカウントで `--limit 2` を指定すると、それぞれの一覧の先頭2件、合計最大4件が対象です。取得済みの投稿もその件数に含みます。省略時は各一覧の全件が対象です。URL 一覧の取得件数を制限する指定ではありません。`--out` を変えると既定の入力一覧もその保存先から読みます。
+
+`--account` は `config.json` に設定したアカウントから1つを選びます。`--from-list` は指定ファイルの `account` に一致する設定済みアカウントだけを処理します。`--account` と併用する場合は、同じアカウントを指定してください。
+
+一覧がない・壊れている場合は、そのアカウントを失敗として記録し、他のアカウントを続行します。アクセス制限を検出した場合は、後続のアカウントも停止します。失敗や未完了が1件でもあれば終了コード1を返し、成功した保存データは保持します。
+
+ブラウザでの本文・複数画像の取得は実験的対応です。DOM が未対応の場合はプレビュー1枚にフォールバックし、未完了として終了コード1を返します。HTTP 方式で保存したプレビューも、ブラウザ方式では再取得の対象です。
+
+## 保存されるファイル
 
 ```text
 data/
-  posts.json                         # 設定アカウント全体の保存済み一覧
-  last-run.json                      # アカウント単位の成功・失敗・未着手
+  posts.json                      # 保存済み投稿の URL・本文・画像ファイル情報
+  last-run.json                   # 最後の実行の成功・失敗と診断情報
+  gallery.html                    # 本文・画像をまとめた単一HTML
   ningyocho.news/
+    post-links.json               # プロフィールから取得した URL 一覧
     <shortcode>/
-      post.json                      # URL、本文、時刻の取得元、取得枚数、状態
-      images/01.jpg
-    .<shortcode>.stage/               # 失敗時の一時保存・failure.json
+      post.json                   # その投稿の本文・取得状態・画像情報
+      images/01.jpg               # 取得した画像
 ```
 
-`--out /path/to/output` で保存先を変更できます。`posts.json` は既存成功分も含み、アカウントと shortcode の組で重複を防ぎます。HTTP は `status: "preview_only"`、`imagesComplete: false` を明記します。これは本文・全画像の完全取得を意味しません。`rawDescription` を常に保持し、認識できない形式では `text: null` にして失敗を報告します。本文の中の引用符と HTML エンティティを壊さず処理します。`captionStatus` はメタデータ本文の完全性が未検証であることを示します。
+`posts.json` は `config.json` に設定した全アカウントの保存済み投稿を含めて更新します。`--account` や `--from-list` で処理対象を絞った場合や、一部アカウントが失敗した場合も、他の設定済みアカウントの保存済み投稿を残します。設定から削除したアカウントは集約対象から外れますが、個別の保存ファイルは削除しません。
 
-`metadataDate` はタイムゾーンの不明な表示日です。画像 alt、メタデータの日付、DOM の UTC 日時に差があり得るため、それぞれを混同しません。
+各投稿の `account` と `shortcode`、`path` で保存元を特定できます。HTTP 方式の `publishedAt` は `null` で、メタデータの日付は `metadataDate` として分けて保存します。本文解析に失敗した場合は `text: null` と元の `rawDescription` を残します。
 
-画像は一時ファイルから rename し、投稿全体も一時ディレクトリで準備してから確定します。ファイル長と SHA-256 を照合して再実行時にスキップします。失敗・未完了は再試行対象で、HTTP プレビューは HTTP モードだけで取得済み扱いになります。中断時の `.previous` は次回復元します。取得途中の失敗でも以前の保存済みデータを保持します。ブラウザで本文・画像の範囲を安全に特定できなければ HTTP プレビューにフォールバックし、`mediaFallback` と不完全フラグを記録します。フォールバック時は保存分を保持したうえでブラウザ経路を未完了（終了コード 1）として報告します。全カルーセル取得は未検証です。二重起動をロックし、異常終了で `.lock` が残った場合は実行中プロセスがないことを確認して手動で除去してください。
+## 取得できないとき
 
-各アカウント・投稿を逐次処理し、投稿間は数秒空けます。HTTP 401/403/429、ログイン遷移、CAPTCHA、アクセス制限を検出すると残りのアカウントも停止します。DOM 未対応などの個別失敗は記録し、ほかのアカウントの成功分を保持します。いずれか失敗・未完了なら終了コードは 1 です。全履歴収集・定期実行・通知・自動再試行はありません。
+| 状況                                        | 確認すること                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------------ |
+| `config.json` がない                        | `cp config.example.json config.json` を実行                              |
+| `post-links.json` がない                    | 先に `pnpm urls` を実行                                                  |
+| ブラウザが見つからない                      | Chromium / Chrome を用意し、必要なら `--browser` で指定                  |
+| `--headed` で起動できない                   | 画面表示のない環境では `--headed` を外す                                 |
+| HTTP 401 / 403 / 429、ログイン要求、CAPTCHA | その実行を停止。`last-run.json` を確認し、連続実行を避ける               |
+| 出力先がロックされている                    | 実行中プロセスがないことを確認してから、残った `data/.lock` を手動で削除 |
 
-## 検証
+ブラウザ方式では、補助通信 `/ajax/bulk-route-definitions/` の XHR / fetch が返す429だけは警告として記録し、公開画面が読める場合に続行します。その他のアクセス制限では停止します。失敗した通信の接続先と種類は `last-run.json` の `restrictedResponses` に残ります。
+
+ログイン、Cookie 注入、既存ブラウザプロファイルの利用、アクセス制限の回避は行いません。Instagram の仕様変更によって動かなくなる場合があります。投稿の再公開・再配布には利用規約、著作権、プライバシーへの配慮が必要です。
+
+## 開発
 
 ```sh
-npm test
-npm run typecheck
+pnpm fmt        # oxfmt で整形
+pnpm lint       # oxlint で検査
+pnpm lint:fix   # oxlint の自動修正
+pnpm typecheck  # TypeScript の型チェック
+pnpm test       # 合成データによるテスト。Instagram には接続しない
+pnpm check      # 整形確認・lint・型チェック・テストをまとめて実行
 ```
 
-テストは合成 fixture のみで、Instagram に接続しません。複数アカウントの逐次処理、同 shortcode の分離、固定投稿の時刻比較、HTTP 本文解析、重複防止、保存失敗・中断復旧、制限時の停止を検証します。
+依存関係は `pnpm-lock.yaml` で固定します。`pnpm-workspace.yaml` の `minimumReleaseAge: 10080` により、[公開から7日以上経ったライブラリを使用](https://pnpm.io/settings#minimumreleaseage)します。例外パッケージは設定していません。[oxfmt](https://oxc.rs/docs/guide/usage/formatter/quickstart) と [oxlint](https://oxc.rs/docs/guide/usage/linter/quickstart) は開発依存に含まれます。
 
-実投稿の本文・画像・ログ・Cookie・ブラウザプロファイル・個人設定はリポジトリに含めません。ローカル検証記録は `evidence/` と `data*/` にあり、公開対象外です。
-
-## 利用上の注意
-
-Instagram の利用規約・適用法・投稿の著作権とプライバシーを確認してください。公開投稿でも自動取得や再利用、再配布の権利が自動的に与えられるわけではありません。画像・本文の再公開には権利者の許諾などが必要になる場合があります。アクセス制限・仕様変更・地域差で、未ログインで読める範囲は変わります。継続取得の安定性や完全性は保証しません。ログイン回避は行いません。
-
-公開するのはツールのコードと一般的な設定例・合成テストだけです。GitHub Actions による Instagram へのアクセス、収集画像の公開、成果物アップロード、Pages 配信は設定しません。
+実投稿のデータ、画像、個人設定、Cookie、ブラウザプロファイルは Git の管理対象外です。定期実行・通知・自動再試行はありません。
