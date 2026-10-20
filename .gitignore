@@ -1,0 +1,14 @@
+node_modules/
+data*/
+evidence/
+config.json
+*.log
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.mp4
+.env*
+*storageState*
+*cookie*
+*profile*/
