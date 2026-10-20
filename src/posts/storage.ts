@@ -1,27 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, writeFile, rename, readFile, stat, rm, readdir } from "node:fs/promises";
 import { join } from "node:path";
-export function postId(href: string, account = "ningyocho.news"): string | null {
-  try {
-    const u = new URL(href, "https://www.instagram.com");
-    if (u.hostname !== "www.instagram.com" && u.hostname !== "instagram.com") return null;
-    const parts = u.pathname.split("/").filter(Boolean);
-    if (parts.length === 3 && parts[0] === account) parts.shift();
-    return parts.length === 2 && /^(p|reel)$/.test(parts[0]) && /^[A-Za-z0-9_-]+$/.test(parts[1])
-      ? parts[1]
-      : null;
-  } catch {
-    return null;
-  }
-}
-export function latest<T extends { shortcode: string; publishedAt: string }>(
-  posts: T[],
-  limit: number,
-): T[] {
-  return [...new Map(posts.map((p) => [p.shortcode, p])).values()]
-    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
-    .slice(0, limit);
-}
 export function imageExtension(b: Uint8Array): string {
   if (b[0] === 255 && b[1] === 216 && b[2] === 255) return "jpg";
   if (Buffer.from(b.subarray(0, 8)).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))
@@ -140,15 +119,4 @@ export async function recover(root: string) {
         else throw e;
       }
     }
-}
-
-export function selectTimestamp(
-  candidates: { href: string; datetime: string | null }[],
-  account: string,
-  shortcode: string,
-) {
-  const exact = candidates.filter((t) => postId(t.href, account) === shortcode);
-  if (exact.length !== 1 || !exact[0].datetime || !Number.isFinite(Date.parse(exact[0].datetime)))
-    throw new Error("DOM_UNSUPPORTED: ambiguous or invalid target permalink timestamp");
-  return exact[0].datetime;
 }

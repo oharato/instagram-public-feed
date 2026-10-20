@@ -8,7 +8,7 @@ import {
   selectAccounts,
   loadAccountUrls,
   PostListError,
-} from "../src/inputs.ts";
+} from "../src/app/inputs.ts";
 
 test("input plans isolate account lists and explicit files select their configured owner", async () => {
   const root = await mkdtemp(join(tmpdir(), "ig-inputs-"));

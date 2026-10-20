@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { networkInterfaces } from "node:os";
-import { galleryScriptHash } from "./gallery-client.ts";
+import { galleryScriptHash } from "./client.ts";
 
 export function createPreviewServer(root: string) {
   // Only the generated HTML is served. Never expose config, reports or the repository.

@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, readFile, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildGallery } from "../src/gallery.ts";
-import { createPreviewServer, previewUrls } from "../src/preview.ts";
-import { galleryScript, galleryScriptHash } from "../src/gallery-client.ts";
+import { buildGallery } from "../src/gallery/render.ts";
+import { createPreviewServer, previewUrls } from "../src/gallery/preview.ts";
+import { galleryScript, galleryScriptHash } from "../src/gallery/client.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 test("gallery embeds local images, groups accounts, escapes captions and keeps previous output on invalid input", async () => {

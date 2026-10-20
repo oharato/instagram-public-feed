@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { savePostLinks, parsePostLinks } from "../src/post-links.ts";
+import { savePostLinks, parsePostLinks } from "../src/posts/links.ts";
 
 test("list import validates account and every URL before deduplicating", () => {
   const input = {

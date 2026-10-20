@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { parsePostLinks } from "./post-links.ts";
+import { parsePostLinks } from "../posts/links.ts";
 
 export class PostListError extends Error {}
 

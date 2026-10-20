@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, delimiter } from "node:path";
-import { findBrowser } from "../src/browser.ts";
+import { findBrowser } from "../src/collection/browser.ts";
 
 test("browser discovery honors explicit path and environment before searching executable PATH entries", async () => {
   const root = await mkdtemp(join(tmpdir(), "ig-browser-path-"));

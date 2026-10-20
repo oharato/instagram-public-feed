@@ -1,3 +1,11 @@
+export function latest<T extends { shortcode: string; publishedAt: string }>(
+  posts: T[],
+  limit: number,
+): T[] {
+  return [...new Map(posts.map((p) => [p.shortcode, p])).values()]
+    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
+    .slice(0, limit);
+}
 interface PostDate {
   publishedAt?: string | null;
   metadataDate?: string | null;

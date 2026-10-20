@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { discoverProfileLinks } from "../src/discovery.ts";
+import { discoverProfileLinks } from "../src/collection/discovery.ts";
 
 test("discovery unions virtualized links, clicks more once, and stops before reading a login wall", async () => {
   let stage = 0,

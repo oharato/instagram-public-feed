@@ -4,7 +4,7 @@ import {
   restrictedResponse,
   checkBrowserDisplay,
   isRouteDefinitionWarning,
-} from "../src/diagnostics.ts";
+} from "../src/collection/diagnostics.ts";
 
 test("only rate-limited route-definition background requests are warnings", () => {
   const detail = restrictedResponse(

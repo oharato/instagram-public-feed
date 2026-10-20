@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCaptionBlock } from "../src/caption.ts";
+import { parseCaptionBlock } from "../src/collection/caption.ts";
 
 test("public caption parsing keeps caption text without author/date or other comments", () => {
   assert.equal(

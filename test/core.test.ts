@@ -3,9 +3,13 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile, rename } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { postId, latest, commit, saved, recover, selectTimestamp } from "../src/core.ts";
-import { parseConfig, runAccounts, aggregate } from "../src/runner.ts";
-import { parsePublicHtml, parseDescription } from "../src/http.ts";
+import { postId, selectTimestamp } from "../src/posts/identity.ts";
+import { latest } from "../src/posts/ordering.ts";
+import { commit, saved, recover } from "../src/posts/storage.ts";
+import { parseConfig } from "../src/app/config.ts";
+import { runAccounts } from "../src/app/runner.ts";
+import { aggregate } from "../src/posts/aggregate.ts";
+import { parsePublicHtml, parseDescription } from "../src/collection/http.ts";
 const jpeg = Buffer.from([255, 216, 255, 224, 1, 2, 3]);
 const post = (account = "fixture.one", shortcode = "Synthetic1", carouselComplete = true) => ({
   account,

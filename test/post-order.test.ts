@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { comparePostsNewest } from "../src/post-order.ts";
+import { comparePostsNewest } from "../src/posts/ordering.ts";
 
 test("newest order uses publication time then metadata date, leaves unknown dates last", () => {
   const posts = [

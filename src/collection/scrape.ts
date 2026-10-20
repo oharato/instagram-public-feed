@@ -1,8 +1,10 @@
 import type { Browser, Locator } from "playwright-core";
 import { httpAccount, imageGet } from "./http.ts";
-import { postId, latest, saved, commit, selectTimestamp } from "./core.ts";
+import { postId, selectTimestamp } from "../posts/identity.ts";
+import { latest } from "../posts/ordering.ts";
+import { saved, commit } from "../posts/storage.ts";
 import { restrictedResponse, isRouteDefinitionWarning } from "./diagnostics.ts";
-import { savePostLinks } from "./post-links.ts";
+import { savePostLinks } from "../posts/links.ts";
 import { parseCaptionBlock } from "./caption.ts";
 import { discoverProfileLinks } from "./discovery.ts";
 export async function scrape(

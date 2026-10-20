@@ -1,6 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { atomicFile, postId } from "./core.ts";
+import { atomicFile } from "./storage.ts";
+import { postId } from "./identity.ts";
 
 export function parsePostLinks(value: unknown, account: string): string[] {
   const input = value as any;

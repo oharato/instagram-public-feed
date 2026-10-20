@@ -1,5 +1,6 @@
 import { parse } from "parse5";
-import { postId, commit, saved } from "./core.ts";
+import { postId } from "../posts/identity.ts";
+import { commit, saved } from "../posts/storage.ts";
 export function parsePublicHtml(html: string) {
   const meta: Record<string, string> = {};
   const links: string[] = [];

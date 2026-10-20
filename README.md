@@ -69,6 +69,8 @@ pnpm html
 
 `data/posts.json` と保存済み画像から `data/gallery.html` を生成します。アカウントをまたいで投稿日の新しい順に並べ、本文・投稿へのリンク・保存済み画像を表示します。正式な投稿日時がない場合はメタデータの日付を参考にし、日付も不明な投稿は最後に表示します。参考日付が同じ投稿同士の正確な順序は分かりません。画像は HTML 内に埋め込むため、このファイル1つでオフラインでも閲覧できます。複数画像は「前へ」「次へ」ボタンで切り替えられます。Instagram への追加取得は行いません。
 
+アカウントごとの絞り込みと本文のキーワード検索ができ、本文は「本文を読む」で展開します。検索は空白区切りで複数の語を指定でき、絞り込み条件は URL に反映されます。
+
 各投稿の画像が1枚だけの場合は、以前の HTTP プレビューだけを保存している可能性があります。複数画像を取得し直して HTML に反映するには：
 
 ```sh
@@ -175,6 +177,17 @@ pnpm lint:fix   # oxlint の自動修正
 pnpm typecheck  # TypeScript の型チェック
 pnpm test       # 合成データによるテスト。Instagram には接続しない
 pnpm check      # 整形確認・lint・型チェック・テストをまとめて実行
+```
+
+ソースは役割ごとに分けています。既存のコマンドは `src/cli.ts` と `src/view.ts` を入口として実行します。
+
+```text
+src/
+  cli.ts, view.ts  # コマンドの入口
+  app/            # 設定、入力の選択、アカウントごとの実行制御
+  collection/     # ブラウザ・HTTPでの投稿取得と解析
+  posts/          # 投稿の識別、並び順、画像保存、一覧の集約
+  gallery/        # HTML生成、CSS、ブラウザ操作、プレビュー配信
 ```
 
 依存関係は `pnpm-lock.yaml` で固定します。`pnpm-workspace.yaml` の `minimumReleaseAge: 10080` により、[公開から7日以上経ったライブラリを使用](https://pnpm.io/settings#minimumreleaseage)します。例外パッケージは設定していません。[oxfmt](https://oxc.rs/docs/guide/usage/formatter/quickstart) と [oxlint](https://oxc.rs/docs/guide/usage/linter/quickstart) は開発依存に含まれます。

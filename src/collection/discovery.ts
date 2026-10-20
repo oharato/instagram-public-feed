@@ -1,4 +1,4 @@
-import { postId } from "./core.ts";
+import { postId } from "../posts/identity.ts";
 
 interface DiscoveryUi {
   links(): Promise<string[]>;

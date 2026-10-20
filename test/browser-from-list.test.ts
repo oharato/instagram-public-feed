@@ -4,8 +4,8 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Browser } from "playwright-core";
-import { commit } from "../src/core.ts";
-import { scrape } from "../src/scrape.ts";
+import { commit } from "../src/posts/storage.ts";
+import { scrape } from "../src/collection/scrape.ts";
 
 test("browser list import skips stored posts without visiting profile or replacing the input snapshot", async () => {
   const root = await mkdtemp(join(tmpdir(), "ig-browser-list-"));
